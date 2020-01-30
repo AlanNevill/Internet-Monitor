@@ -12,12 +12,24 @@ namespace InternetMonitor
         private static string _internetStatePrev;
         private static DateTime _dt = DateTime.Now;
 
-        private static FileInfo _fileInfo = new FileInfo(@".\run.txt");
-        private static byte[] _buffer = Encoding.ASCII.GetBytes("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        private static FileInfo _fileInfo = new FileInfo(@"./run.txt");
+        private static readonly byte[] _buffer = Encoding.ASCII.GetBytes("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+
+        private static readonly StreamWriter _writer = File.AppendText(@"./logfile.txt");
+        private static string _mess;
 
         private static void Main(string[] args)
         {
-            Console.WriteLine($"{DateTime.Now} - Starting {args[0]} - delete run.txt to terminate.");
+            if (args.Length==0)
+            {
+                args[0] = "1.1.1.1";
+            }
+
+            _writer.AutoFlush = true;
+
+            _mess = $"{DateTime.Now} - Starting {args[0]} - delete run.txt to terminate.";
+            Console.WriteLine(_mess);
+            Log(_mess);
 
             while (_fileInfo.Exists)
             {
@@ -35,12 +47,12 @@ namespace InternetMonitor
                     // save the state change time
                     _dt = DateTime.Now;
 
-                    Console.WriteLine($"{DateTime.Now} - Internet state is now <{_internetStateNow}>, " +
-                        $"Previous state was <{_internetStatePrev}>, " +
-                        $"Duration of previous state <{_interval.Minutes}> mins");
+                    _mess = $"{DateTime.Now}, Internet state is now, {_internetStateNow}, Duration of previous state, {_internetStatePrev}, {_interval.TotalMinutes}, mins";
+                    Console.WriteLine(_mess);
+                    Log(_mess);
                 }
 
-                _fileInfo = new FileInfo(@".\run.txt");
+                _fileInfo = new FileInfo(@"./run.txt");
 
                 // log an alive message every hour
                 DateTime dt = DateTime.Now;
@@ -49,11 +61,14 @@ namespace InternetMonitor
                     Console.WriteLine($"{DateTime.Now} - INFO - monitoring");
                 }
 
-                // sleep 30 seconds
-                Thread.Sleep(30000);
+                // sleep 31 seconds
+                Thread.Sleep(31000);
             }
 
-            Console.WriteLine($"{DateTime.Now} - Finished - press any key to terminate");
+            _mess = $"{DateTime.Now} - Finished - no run.txt file - press any key to terminate";
+            Console.WriteLine(_mess);
+            Log(_mess);
+
             Console.ReadLine();
 
 
@@ -72,5 +87,9 @@ namespace InternetMonitor
 
         }
 
+        private static void Log(string mess)
+        {
+            _writer.WriteLine(mess);
+        }
     }
 }
