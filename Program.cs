@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Net.NetworkInformation;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -8,7 +9,7 @@ namespace InternetMonitor
 {
     internal class Program
     {
-        private static string _internetStateNow = "starting monitor";
+        private static string _internetStateNow = "monitor starting";
         private static string _internetStatePrev;
         private static DateTime _dt = DateTime.Now;
 
@@ -27,7 +28,7 @@ namespace InternetMonitor
 
             _writer.AutoFlush = true;
 
-            _mess = $"{DateTime.Now} - Starting {args[0]} - delete run.txt to terminate.";
+            _mess = $"{DateTime.Now} - v{Assembly.GetExecutingAssembly().GetName().Version} Starting {args[0]} - delete run.txt to terminate.";
             Console.WriteLine(_mess);
             Log(_mess);
 
@@ -54,7 +55,7 @@ namespace InternetMonitor
 
                 _fileInfo = new FileInfo(@"./run.txt");
 
-                // log an alive message every hour
+                // log an alive message once every hour
                 DateTime dt = DateTime.Now;
                 if (dt.Minute == 0)
                 {
@@ -65,6 +66,7 @@ namespace InternetMonitor
                 Thread.Sleep(31000);
             }
 
+
             _mess = $"{DateTime.Now} - Finished - no run.txt file - press any key to terminate";
             Console.WriteLine(_mess);
             Log(_mess);
@@ -72,7 +74,7 @@ namespace InternetMonitor
             Console.ReadLine();
 
 
-            // local function to ping internet
+            // local function to ping internet which uses args[]
             bool IsInternetUp()
             {
                 Ping myPing = new Ping();
