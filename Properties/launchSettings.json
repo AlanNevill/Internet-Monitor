@@ -2,7 +2,7 @@
   "profiles": {
     "InternetMonitor": {
       "commandName": "Project",
-      "commandLineArgs": "1.1.1.1"
+      "commandLineArgs": "--host 8.8.8.8"
     }
   }
 }

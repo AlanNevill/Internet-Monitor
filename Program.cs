@@ -1,4 +1,6 @@
 ﻿using System;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Reflection;
@@ -19,19 +21,41 @@ namespace InternetMonitor
         private static readonly StreamWriter _writer = File.AppendText(@"./logfile.txt");
         private static string _mess;
 
-        private static void Main(string[] args)
-        {
-            if (args.Length==0)
-            {
-                args[0] = "1.1.1.1";
-            }
+        // Uses System.CommandLine beta library
+        // see https://github.com/dotnet/command-line-api/wiki/Your-first-app-with-System.CommandLine
 
+        public static int Main(string[] args)
+        {
+            RootCommand rootCommand = new RootCommand("Internet monitor")
+            {
+                new Option("--host", "Host ip address or name such as 8.8.8.8, www.google.com")
+                    {
+                        Argument = new Argument<string>(),
+                        Required = true
+                    }
+            };
+
+            rootCommand.TreatUnmatchedTokensAsErrors = true;
+
+            rootCommand.Handler = CommandHandler.Create((string host) =>
+            {
+                Monitor(host);
+            });
+
+            return rootCommand.InvokeAsync(args).Result;
+        }
+
+        private static void Monitor(string host)
+        {
+            // default is not to flush
             _writer.AutoFlush = true;
 
-            _mess = $"{DateTime.Now} - v{Assembly.GetExecutingAssembly().GetName().Version} Starting {args[0]} - delete run.txt to terminate.";
+            // startup message
+            _mess = $"{DateTime.Now} - v{Assembly.GetExecutingAssembly().GetName().Version}. Starting with host: {host}. Delete run.txt to terminate.";
             Console.WriteLine(_mess);
             Log(_mess);
 
+            // main loop
             while (_fileInfo.Exists)
             {
                 // save the previous internet state
@@ -66,7 +90,7 @@ namespace InternetMonitor
                 Thread.Sleep(31000);
             }
 
-
+            // finish message
             _mess = $"{DateTime.Now} - Finished - no run.txt file - press any key to terminate";
             Console.WriteLine(_mess);
             Log(_mess);
@@ -77,16 +101,24 @@ namespace InternetMonitor
             // local function to ping internet which uses args[]
             bool IsInternetUp()
             {
-                Ping myPing = new Ping();
-                //byte[] buffer = new byte[32];
                 int timeout = 2000;
                 PingOptions pingOptions = new PingOptions();
-                PingReply reply = myPing.Send(args[0], timeout, _buffer, pingOptions);
-
-                myPing.Dispose();
-                return reply.Status == IPStatus.Success;
+                using (Ping myPing = new Ping())
+                {
+                    try
+                    {
+                        PingReply reply = myPing.Send(host, timeout, _buffer, pingOptions);
+                        return reply.Status == IPStatus.Success;
+                    }
+                    catch (Exception ex)
+                    {
+                        _mess = $"{DateTime.Now} - ERROR - {ex.ToString()}";
+                        Console.WriteLine(_mess);
+                        Log(_mess);
+                        return true;
+                    }
+                }
             }
-
         }
 
         private static void Log(string mess)
